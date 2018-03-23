@@ -12,11 +12,11 @@ type Config struct {
 	// Debug if set to true will enable debug logs
 	Debug bool
 
-	// AdminName is administrator user name
-	AdminName string
+	// AuthID is administrator AuthID
+	AuthID string
 
-	//AdminPass is administrator password
-	AdminPass string
+	//AdminPass is administrator Token
+	Token string
 }
 
 // ReadConfig reads config from file
