@@ -10,7 +10,8 @@ type Room struct {
 	Users []*User
 }
 
-func (r *Room) join(user *User) error {
+// Join adds user to room
+func (r *Room) Join(user *User) error {
 	for _, roomUser := range r.Users {
 		if user.Name == roomUser.Name {
 			return ErrExists
@@ -18,4 +19,15 @@ func (r *Room) join(user *User) error {
 	}
 	r.Users = append(r.Users, user)
 	return nil
+}
+
+// Exit removes user from room
+func (r *Room) Exit(user *User) error {
+	for i, roomUser := range r.Users {
+		if user.Name == roomUser.Name {
+			r.Users = append(r.Users[:i], r.Users[i+1:]...)
+			return nil
+		}
+	}
+	return ErrNotFound
 }

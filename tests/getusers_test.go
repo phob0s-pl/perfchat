@@ -3,13 +3,14 @@ package tests
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	api "github.com/phob0s-pl/perfchat/apiv1"
 )
 
 func TestGetUsersByNotAddedUser(t *testing.T) {
 	var (
-		address = "localhost:9094"
+		address = "localhost:9021"
 		server  = NewServer(address)
 		client  = api.NewClient(dummyuser, address)
 		done    = make(chan bool)
@@ -23,6 +24,7 @@ func TestGetUsersByNotAddedUser(t *testing.T) {
 		}
 		done <- true
 	}()
+	time.Sleep(time.Millisecond * 10)
 
 	if _, err := client.GetUsers(); err == nil {
 		t.Errorf("Getting users with user not in engine should fail")
@@ -36,7 +38,7 @@ func TestGetUsersByNotAddedUser(t *testing.T) {
 
 func TestGetUsers(t *testing.T) {
 	var (
-		address = "localhost:9095"
+		address = "localhost:9022"
 		server  = NewServer(address)
 		client  = api.NewClient(admin, address)
 		done    = make(chan bool)
@@ -51,6 +53,7 @@ func TestGetUsers(t *testing.T) {
 		}
 		done <- true
 	}()
+	time.Sleep(time.Millisecond * 10)
 
 	users, err := client.GetUsers()
 	if err != nil {
@@ -80,6 +83,5 @@ func TestGetUsers(t *testing.T) {
 		if engineUser.Role != user.Role {
 			t.Errorf("User %s, role mismatch, got %s, expected %s", user.Name, user.Role, engineUser.Role)
 		}
-
 	}
 }

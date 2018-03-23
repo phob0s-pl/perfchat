@@ -3,6 +3,7 @@ package tests
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	api "github.com/phob0s-pl/perfchat/apiv1"
 )
@@ -21,9 +22,10 @@ func TestPing(t *testing.T) {
 		}
 		done <- true
 	}()
+	time.Sleep(time.Millisecond * 10)
 
 	if err := client.Ping(); err != nil {
-		t.Errorf("Adding user with no auth should fail")
+		t.Errorf("Sending PING failed, err=%s", err)
 	}
 
 	if err := server.Srv.Close(); err != nil {

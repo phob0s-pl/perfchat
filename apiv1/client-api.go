@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"io/ioutil"
@@ -33,6 +34,31 @@ func (c *Client) requestPath(apicall string) string {
 	return fmt.Sprintf("http://%s%s", c.serverAddr, GetPath(apicall))
 }
 
+// newRequest creates new requests and sets auth info
+func (c *Client) newAPIRequest(method, apiCall string, body io.Reader) (*http.Request, error) {
+	url := c.requestPath(apiCall)
+	request, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	request.SetBasicAuth(c.user.AuthID, c.user.Token)
+	return request, nil
+}
+
+// simpleDo makes http request and checks response code and returns body
+func (c *Client) do(request *http.Request) ([]byte, error) {
+	resp, err := c.httpClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s", http.StatusText(resp.StatusCode))
+	}
+
+	return ioutil.ReadAll(resp.Body)
+}
+
 // AddUser adds new chat user
 // Note: need to have admin priviliges
 func (c *Client) AddUser(user *chat.User) error {
@@ -47,69 +73,43 @@ func (c *Client) AddUser(user *chat.User) error {
 		return fmt.Errorf("AddUser: %s", err)
 	}
 
-	url := c.requestPath(UsersCall) + user.Name
-	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
+	request, err := c.newAPIRequest(http.MethodPost, UsersCall, bytes.NewBuffer(payload))
 	if err != nil {
 		return fmt.Errorf("AddUser: %s", err)
 	}
-	request.SetBasicAuth(c.user.AuthID, c.user.Token)
 
-	resp, err := c.httpClient.Do(request)
-	if err != nil {
+	if _, err := c.do(request); err != nil {
 		return fmt.Errorf("AddUser: %s", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("AddUser: %s", http.StatusText(resp.StatusCode))
-	}
-
 	return nil
 }
 
 // Ping pings server
 func (c *Client) Ping() error {
-	url := c.requestPath(PingCall)
-	request, err := http.NewRequest(http.MethodGet, url, nil)
+	request, err := c.newAPIRequest(http.MethodGet, PingCall, nil)
 	if err != nil {
 		return fmt.Errorf("Ping: %s", err)
 	}
-	resp, err := c.httpClient.Do(request)
-	if err != nil {
+
+	if _, err := c.do(request); err != nil {
 		return fmt.Errorf("Ping: %s", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Ping: %s", http.StatusText(resp.StatusCode))
-	}
-
 	return nil
 }
 
 // GetUsers gets all users from chat
 func (c *Client) GetUsers() (users []User, err error) {
-	url := c.requestPath(UsersCall)
-	request, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("GetUsers: %s", err)
-	}
-	request.SetBasicAuth(c.user.AuthID, c.user.Token)
-
-	resp, err := c.httpClient.Do(request)
-	if err != nil {
-		return nil, fmt.Errorf("GetUsers: %s", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GetUsers: %s", http.StatusText(resp.StatusCode))
-	}
-
-	content, err := ioutil.ReadAll(resp.Body)
+	request, err := c.newAPIRequest(http.MethodGet, UsersCall, nil)
 	if err != nil {
 		return nil, fmt.Errorf("GetUsers: %s", err)
 	}
 
-	if err := json.Unmarshal(content, &users); err != nil {
+	body, err := c.do(request)
+	if err != nil {
+		return users, fmt.Errorf("GetUsers: %s", err)
+	}
+
+	if err := json.Unmarshal(body, &users); err != nil {
 		return nil, fmt.Errorf("GetUsers: %s", err)
 	}
 
@@ -118,26 +118,18 @@ func (c *Client) GetUsers() (users []User, err error) {
 
 // GetRooms get all rooms from chat
 func (c *Client) GetRooms() (rooms []Room, err error) {
-	url := c.requestPath(RoomsCall)
-	request, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("GetRooms: %s", err)
-	}
-	request.SetBasicAuth(c.user.AuthID, c.user.Token)
-
-	resp, err := c.httpClient.Do(request)
-	if err != nil {
-		return nil, fmt.Errorf("GetRooms: %s", err)
-	}
-	defer resp.Body.Close()
-
-	content, err := ioutil.ReadAll(resp.Body)
+	request, err := c.newAPIRequest(http.MethodGet, RoomsCall, nil)
 	if err != nil {
 		return nil, fmt.Errorf("GetRooms: %s", err)
 	}
 
-	if err := json.Unmarshal(content, &rooms); err != nil {
-		return nil, fmt.Errorf("GetRooms: %s", err)
+	body, err := c.do(request)
+	if err != nil {
+		return rooms, fmt.Errorf("GetRooms: %s", err)
+	}
+
+	if err := json.Unmarshal(body, &rooms); err != nil {
+		return nil, fmt.Errorf("body: %s", err)
 	}
 
 	return rooms, err
@@ -145,22 +137,82 @@ func (c *Client) GetRooms() (rooms []Room, err error) {
 
 // RoomCreate creates new room and sets user as owner
 func (c *Client) RoomCreate(name string) error {
+	payload, err := json.Marshal(&Room{
+		Name: name,
+	})
+	if err != nil {
+		return fmt.Errorf("RoomCreate: %s", err)
+	}
+
+	request, err := c.newAPIRequest(http.MethodPost, RoomsCreateCall, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("RoomCreate: %s", err)
+	}
+
+	if _, err := c.do(request); err != nil {
+		return fmt.Errorf("RoomCreate: %s", err)
+	}
 	return nil
 }
 
 // RoomDelete deletes room from server
 // note: user must be owner of a room
 func (c *Client) RoomDelete(name string) error {
+	payload, err := json.Marshal(&Room{
+		Name: name,
+	})
+	if err != nil {
+		return fmt.Errorf("RoomDelete: %s", err)
+	}
+
+	request, err := c.newAPIRequest(http.MethodPost, RoomsDeleteCall, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("RoomDelete: %s", err)
+	}
+
+	if _, err := c.do(request); err != nil {
+		return fmt.Errorf("RoomDelete: %s", err)
+	}
 	return nil
 }
 
 // RoomJoin joins user to room
 func (c *Client) RoomJoin(name string) error {
+	payload, err := json.Marshal(&Room{
+		Name: name,
+	})
+	if err != nil {
+		return fmt.Errorf("RoomJoin: %s", err)
+	}
+
+	request, err := c.newAPIRequest(http.MethodPost, RoomsJoinCall, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("RoomJoin: %s", err)
+	}
+
+	if _, err := c.do(request); err != nil {
+		return fmt.Errorf("RoomJoin: %s", err)
+	}
 	return nil
 }
 
 // RoomExit exits user to room
 // note: user can't be owner of the room
 func (c *Client) RoomExit(name string) error {
+	payload, err := json.Marshal(&Room{
+		Name: name,
+	})
+	if err != nil {
+		return fmt.Errorf("RoomExit: %s", err)
+	}
+
+	request, err := c.newAPIRequest(http.MethodPost, RoomsExitCall, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("RoomExit: %s", err)
+	}
+
+	if _, err := c.do(request); err != nil {
+		return fmt.Errorf("RoomExit: %s", err)
+	}
 	return nil
 }

@@ -41,3 +41,33 @@ func (a *API) GetRoomsRoute() *Route {
 		WithPrefix:  false,
 	}
 }
+
+func (a *API) CreateRoomRoute() *Route {
+	return &Route{
+		HandlerFunc: a.CreateRoom,
+		Method:      http.MethodPost,
+		Name:        "CreateRoom",
+		Pattern:     GetPath(RoomsCreateCall),
+		WithPrefix:  false,
+	}
+}
+
+func (a *API) JoinRoomRoute() *Route {
+	return &Route{
+		HandlerFunc: a.RoomJoin,
+		Method:      http.MethodPost,
+		Name:        "JoinRoom",
+		Pattern:     GetPath(RoomsJoinCall),
+		WithPrefix:  false,
+	}
+}
+
+func (a *API) ExitRoomRoute() *Route {
+	return &Route{
+		HandlerFunc: a.RoomExit,
+		Method:      http.MethodPost,
+		Name:        "ExitRoom",
+		Pattern:     GetPath(RoomsExitCall),
+		WithPrefix:  false,
+	}
+}

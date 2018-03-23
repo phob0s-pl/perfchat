@@ -12,6 +12,10 @@ var (
 	ErrExists = errors.New("already exists")
 	// ErrNoResources is returned when limits are reached
 	ErrNoResources = errors.New("out of resources")
+	// ErrMissingArg is returned when some data is missing
+	ErrMissingArg = errors.New("missing argument")
+	// ErrNotPermit is returned when operation is not permited
+	ErrNotPermit = errors.New("not permited")
 )
 
 const (
@@ -68,6 +72,23 @@ func (c *Chat) AddUser(user *User) error {
 	return nil
 }
 
+// AddRoom adds user to chat
+func (c *Chat) AddRoom(room *Room) error {
+	c.Lock()
+	defer c.Unlock()
+
+	if len(room.Users) != 1 || room.Name == "" || room.Creator == "" {
+		return ErrMissingArg
+	}
+
+	if c.RoomExists(room.Name) {
+		return ErrExists
+	}
+
+	c.rooms[room.Name] = room
+	return nil
+}
+
 // JoinRoom joins user with name to room
 func (c *Chat) JoinRoom(username, roomname string) error {
 	c.Lock()
@@ -83,7 +104,25 @@ func (c *Chat) JoinRoom(username, roomname string) error {
 		return err
 	}
 
-	return room.join(user)
+	return room.Join(user)
+}
+
+// ExitRoom removes user with name from room
+func (c *Chat) ExitRoom(username, roomname string) error {
+	c.Lock()
+	defer c.Unlock()
+
+	user, err := c.GetUserByName(username)
+	if err != nil {
+		return err
+	}
+
+	room, err := c.GetRoomByName(roomname)
+	if err != nil {
+		return err
+	}
+
+	return room.Exit(user)
 }
 
 // RoomExists checks if room exists
@@ -145,4 +184,28 @@ func (c *Chat) GetUserByAuth(id, token string) (*User, error) {
 // UsersCount returns number of users in chat
 func (c *Chat) UsersCount() int {
 	return len(c.users)
+}
+
+// RoomsCount returns number of rooms in chat
+func (c *Chat) RoomsCount() int {
+	return len(c.rooms)
+}
+
+// DeleteRoom deletes room from chat if exists
+// and username is room creator
+func (c *Chat) DeleteRoom(username, roomname string) error {
+	c.Lock()
+	defer c.Unlock()
+
+	room, ok := c.rooms[roomname]
+	if !ok {
+		return ErrNotFound
+	}
+
+	if room.Creator != username {
+		return ErrNotPermit
+	}
+
+	delete(c.rooms, roomname)
+	return nil
 }

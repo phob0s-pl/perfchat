@@ -3,13 +3,14 @@ package tests
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	api "github.com/phob0s-pl/perfchat/apiv1"
 )
 
 func TestAddUserNoAuth(t *testing.T) {
 	var (
-		address = "localhost:9091"
+		address = "localhost:9001"
 		server  = NewServer(address)
 		client  = api.NewClient(dummyuser, address)
 		done    = make(chan bool)
@@ -21,6 +22,7 @@ func TestAddUserNoAuth(t *testing.T) {
 		}
 		done <- true
 	}()
+	time.Sleep(time.Millisecond * 10)
 
 	if err := client.AddUser(admin); err == nil {
 		t.Errorf("Adding user with no auth should fail")
@@ -39,7 +41,7 @@ func TestAddUserNoAuth(t *testing.T) {
 
 func TestAddSingleUser(t *testing.T) {
 	var (
-		address = "localhost:9092"
+		address = "localhost:9002"
 		server  = NewServer(address)
 		client  = api.NewClient(admin, address)
 		done    = make(chan bool)
@@ -47,11 +49,13 @@ func TestAddSingleUser(t *testing.T) {
 	server.API.Engine.AddUser(admin)
 
 	go func() {
+
 		if err := server.Srv.ListenAndServe(); err != http.ErrServerClosed {
 			t.Errorf("Server failed, err=%s", err)
 		}
 		done <- true
 	}()
+	time.Sleep(time.Millisecond * 10)
 
 	if err := client.AddUser(dummyuser); err != nil {
 		t.Errorf("Adding user %s failed, err=%s", dummyuser.Name, err)

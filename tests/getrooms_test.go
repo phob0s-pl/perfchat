@@ -3,13 +3,14 @@ package tests
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	api "github.com/phob0s-pl/perfchat/apiv1"
 )
 
 func TestGetRoomsByNotAddedUser(t *testing.T) {
 	var (
-		address = "localhost:9096"
+		address = "localhost:9011"
 		server  = NewServer(address)
 		client  = api.NewClient(dummyuser, address)
 		done    = make(chan bool)
@@ -23,6 +24,7 @@ func TestGetRoomsByNotAddedUser(t *testing.T) {
 		}
 		done <- true
 	}()
+	time.Sleep(time.Millisecond * 10)
 
 	if _, err := client.GetRooms(); err == nil {
 		t.Errorf("Getting rooms with user not in engine should fail")
@@ -36,7 +38,7 @@ func TestGetRoomsByNotAddedUser(t *testing.T) {
 
 func TestGetRoomsSimple(t *testing.T) {
 	var (
-		address = "localhost:9097"
+		address = "localhost:9012"
 		server  = NewServer(address)
 		client  = api.NewClient(admin, address)
 		done    = make(chan bool)
@@ -51,6 +53,7 @@ func TestGetRoomsSimple(t *testing.T) {
 		}
 		done <- true
 	}()
+	time.Sleep(time.Millisecond * 10)
 
 	rooms, err := client.GetRooms()
 	if err != nil {

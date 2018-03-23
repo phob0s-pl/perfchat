@@ -36,11 +36,10 @@ func (a *API) getRequestingUser(r *http.Request) (*chat.User, error) {
 	return user, nil
 }
 
+// GetUsers returns all users in chat
 func (a *API) GetUsers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	_, err := a.getRequestingUser(r)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+	if _, ok := a.isUser(w, r); !ok {
 		return
 	}
 
@@ -58,15 +57,15 @@ func (a *API) GetUsers(w http.ResponseWriter, r *http.Request) {
 	w.Write(payload)
 }
 
+// AddUser adds user to chat
+// Only admin can add user
 func (a *API) AddUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		user = &User{}
 	)
 
-	requester, err := a.getRequestingUser(r)
-	if err != nil || !requester.CanAddUser() {
-		w.WriteHeader(http.StatusUnauthorized)
+	if _, ok := a.isUser(w, r); !ok {
 		return
 	}
 
@@ -98,11 +97,10 @@ func (a *API) Ping(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 }
 
+// GetRooms returns list of rooms in chat
 func (a *API) GetRooms(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	_, err := a.getRequestingUser(r)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+	if _, ok := a.isUser(w, r); !ok {
 		return
 	}
 
@@ -127,20 +125,108 @@ func (a *API) GetRooms(w http.ResponseWriter, r *http.Request) {
 	w.Write(payload)
 }
 
-// RoomCreate creates new room and sets user as owner
-func (a *API) RoomCreate(w http.ResponseWriter, r *http.Request) {
+// CreateRoom creates new room and sets user as owner
+func (a *API) CreateRoom(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	user, ok := a.isUser(w, r)
+	if !ok {
+		return
+	}
+
+	content, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	room := &Room{}
+	if err := json.Unmarshal(content, room); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := a.Engine.AddRoom(&chat.Room{
+		Creator: user.Name,
+		Name:    room.Name,
+		Users:   []*chat.User{user},
+	}); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+	}
 }
 
 // RoomDelete deletes room from server
 // note: user must be owner of a room
 func (a *API) RoomDelete(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	if _, ok := a.isUser(w, r); !ok {
+		return
+	}
 }
 
 // RoomJoin joins user to room
 func (a *API) RoomJoin(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	user, ok := a.isUser(w, r)
+	if !ok {
+		return
+	}
+
+	content, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	room := &Room{}
+	if err := json.Unmarshal(content, room); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := a.Engine.JoinRoom(user.Name, room.Name); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 }
 
 // RoomExit exits user to room
 // note: user can't be owner of the room
 func (a *API) RoomExit(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	user, ok := a.isUser(w, r)
+	if !ok {
+		return
+	}
+
+	content, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	room := &Room{}
+	if err := json.Unmarshal(content, room); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := a.Engine.ExitRoom(user.Name, room.Name); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+}
+
+// Checks if request was done by user
+// if not sets StatusUnauthorized on response and returns false
+func (a *API) isUser(w http.ResponseWriter, r *http.Request) (*chat.User, bool) {
+	user, err := a.getRequestingUser(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return nil, false
+	}
+	return user, true
 }
