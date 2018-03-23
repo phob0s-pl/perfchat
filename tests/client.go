@@ -33,3 +33,25 @@ var (
 		Token:  "betaToken",
 	}
 )
+
+var (
+	roomAdmin = &chat.Room{
+		Creator: "admin",
+		Name:    "main",
+	}
+
+	roomDummy = &chat.Room{
+		Creator: "dummyName",
+		Name:    "dummyroom",
+	}
+
+	roomAlpha = &chat.Room{
+		Creator: "alphaName",
+		Name:    "alpharoom",
+	}
+
+	roomBeta = &chat.Room{
+		Creator: "betaName",
+		Name:    "betaroom",
+	}
+)

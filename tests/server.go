@@ -30,6 +30,7 @@ func NewServer(address string) *Server {
 	AddAPI(router, serverAPI.AddUserRoute())
 	AddAPI(router, serverAPI.PingRoute())
 	AddAPI(router, serverAPI.GetUsersRoute())
+	AddAPI(router, serverAPI.GetRoomsRoute())
 
 	return &Server{
 		Srv: httpSrv,

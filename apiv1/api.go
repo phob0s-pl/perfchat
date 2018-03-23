@@ -15,15 +15,40 @@ const (
 	// - GET method lists all users
 	UsersCall = "users"
 
-	// PingCall for checking if API is online
+	// PingCall [GET] is for checking if API is online
 	PingCall = "ping"
+
+	// RoomsCall [GET] is for listing current rooms
+	RoomsCall = "rooms"
+
+	// RoomsCreateCall [POST] is for creating new room
+	RoomsCreateCall = "rooms/create"
+
+	// RoomsDeleteCall [POST] is for deleting  room
+	RoomsDeleteCall = "rooms/delete"
+
+	// RoomsJoinCall [POST] is for joining selected room
+	RoomsJoinCall = "rooms/join"
+
+	// RoomsExitCall [POST] is for exiting from room
+	RoomsExitCall = "rooms/exit"
 )
 
+// User is structure for manipulating user related calls
 type User struct {
 	Name   string `json:"name"`
 	Role   string `json:"role"`
 	AuthID string `json:"authid"`
 	Token  string `json:"token"`
+	// Rooms represents rooms user is currently joined in
+	Rooms []string `json:"rooms"`
+}
+
+// Room is structure for manipulating room related calls
+type Room struct {
+	Name    string   `json:"name"`
+	Creator string   `json:"creator"`
+	Users   []string `json:"users"`
 }
 
 // GetPath returns path to API call

@@ -33,6 +33,8 @@ func (c *Client) requestPath(apicall string) string {
 	return fmt.Sprintf("http://%s%s", c.serverAddr, GetPath(apicall))
 }
 
+// AddUser adds new chat user
+// Note: need to have admin priviliges
 func (c *Client) AddUser(user *chat.User) error {
 	payload, err := json.Marshal(&User{
 		AuthID: user.AuthID,
@@ -64,6 +66,7 @@ func (c *Client) AddUser(user *chat.User) error {
 	return nil
 }
 
+// Ping pings server
 func (c *Client) Ping() error {
 	url := c.requestPath(PingCall)
 	request, err := http.NewRequest(http.MethodGet, url, nil)
@@ -83,6 +86,7 @@ func (c *Client) Ping() error {
 	return nil
 }
 
+// GetUsers gets all users from chat
 func (c *Client) GetUsers() (users []User, err error) {
 	url := c.requestPath(UsersCall)
 	request, err := http.NewRequest(http.MethodGet, url, nil)
@@ -110,4 +114,53 @@ func (c *Client) GetUsers() (users []User, err error) {
 	}
 
 	return users, err
+}
+
+// GetRooms get all rooms from chat
+func (c *Client) GetRooms() (rooms []Room, err error) {
+	url := c.requestPath(RoomsCall)
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("GetRooms: %s", err)
+	}
+	request.SetBasicAuth(c.user.AuthID, c.user.Token)
+
+	resp, err := c.httpClient.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("GetRooms: %s", err)
+	}
+	defer resp.Body.Close()
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("GetRooms: %s", err)
+	}
+
+	if err := json.Unmarshal(content, &rooms); err != nil {
+		return nil, fmt.Errorf("GetRooms: %s", err)
+	}
+
+	return rooms, err
+}
+
+// RoomCreate creates new room and sets user as owner
+func (c *Client) RoomCreate(name string) error {
+	return nil
+}
+
+// RoomDelete deletes room from server
+// note: user must be owner of a room
+func (c *Client) RoomDelete(name string) error {
+	return nil
+}
+
+// RoomJoin joins user to room
+func (c *Client) RoomJoin(name string) error {
+	return nil
+}
+
+// RoomExit exits user to room
+// note: user can't be owner of the room
+func (c *Client) RoomExit(name string) error {
+	return nil
 }

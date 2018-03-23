@@ -31,3 +31,13 @@ func (a *API) GetUsersRoute() *Route {
 		WithPrefix:  false,
 	}
 }
+
+func (a *API) GetRoomsRoute() *Route {
+	return &Route{
+		HandlerFunc: a.GetRooms,
+		Method:      http.MethodGet,
+		Name:        "GetRooms",
+		Pattern:     GetPath(RoomsCall),
+		WithPrefix:  false,
+	}
+}

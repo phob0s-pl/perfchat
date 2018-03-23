@@ -93,6 +93,54 @@ func (a *API) AddUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Ping respongs wint 200 to ping message
 func (a *API) Ping(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+}
+
+func (a *API) GetRooms(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	_, err := a.getRequestingUser(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var rooms []Room
+	engineRooms := a.Engine.ListRooms()
+	for _, engineRoom := range engineRooms {
+		var userlist []string
+		for _, userInRoom := range engineRoom.Users {
+			userlist = append(userlist, userInRoom.Name)
+		}
+		rooms = append(rooms, Room{
+			Name:    engineRoom.Name,
+			Creator: engineRoom.Creator,
+			Users:   userlist})
+	}
+
+	payload, err := json.Marshal(rooms)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Write(payload)
+}
+
+// RoomCreate creates new room and sets user as owner
+func (a *API) RoomCreate(w http.ResponseWriter, r *http.Request) {
+}
+
+// RoomDelete deletes room from server
+// note: user must be owner of a room
+func (a *API) RoomDelete(w http.ResponseWriter, r *http.Request) {
+}
+
+// RoomJoin joins user to room
+func (a *API) RoomJoin(w http.ResponseWriter, r *http.Request) {
+}
+
+// RoomExit exits user to room
+// note: user can't be owner of the room
+func (a *API) RoomExit(w http.ResponseWriter, r *http.Request) {
 }
