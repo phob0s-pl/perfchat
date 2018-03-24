@@ -40,6 +40,8 @@ clean:
 	@rm -f $(CLIENT_CONF)
 	@rm -f $(SERVER_CONF)
 
-ansible:
+ansible: build
 	@cp ~/.hosts deployment/ansible/inventories/production/hosts
+	@cp $(BINARY_SERVER) deployment/ansible/roles/files/
+	@cp $(BINARY_CLIENT) deployment/ansible/roles/files/
 	cd deployment/ansible && ansible-playbook main.yml -i inventories/production/hosts

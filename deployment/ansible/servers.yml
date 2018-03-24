@@ -1,4 +1,8 @@
 ---
-- hosts: servers
-  roles:
-    - server
+
+- hosts: all
+  tasks:
+    - debug:
+        msg: task1
+    - include_tasks: "{{playbook_dir}}/roles/perfchat_server/tasks/install_server.yml"
+

@@ -1,1 +1,5 @@
 deployment/ansible/inventories/production/hosts
+client.conf
+perfchat_client
+perfchat_server
+server.conf
