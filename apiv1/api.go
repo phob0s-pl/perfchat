@@ -60,6 +60,7 @@ type Room struct {
 	Users   []string `json:"users"`
 }
 
+// Message represents message exchanged by users
 type Message struct {
 	User    string `json:"user"`
 	Room    string `json:"room"`

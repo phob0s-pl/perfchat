@@ -108,7 +108,7 @@ func (c *Client) GetUsers() (users []User, err error) {
 		return users, fmt.Errorf("GetUsers: %s", err)
 	}
 
-	if err := json.Unmarshal(body, &users); err != nil {
+	if err = json.Unmarshal(body, &users); err != nil {
 		return nil, fmt.Errorf("GetUsers: %s", err)
 	}
 
@@ -127,7 +127,7 @@ func (c *Client) GetRooms() (rooms []Room, err error) {
 		return rooms, fmt.Errorf("GetRooms: %s", err)
 	}
 
-	if err := json.Unmarshal(body, &rooms); err != nil {
+	if err = json.Unmarshal(body, &rooms); err != nil {
 		return nil, fmt.Errorf("body: %s", err)
 	}
 
@@ -246,7 +246,7 @@ func (c *Client) ReceiveMessage() (messages []Message, err error) {
 		return messages, fmt.Errorf("ReceiveMessage: %s", err)
 	}
 
-	if err := json.Unmarshal(body, &messages); err != nil {
+	if err = json.Unmarshal(body, &messages); err != nil {
 		return nil, fmt.Errorf("ReceiveMessage: %s", err)
 	}
 
