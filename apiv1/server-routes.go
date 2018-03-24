@@ -91,3 +91,13 @@ func (a *API) ReceiveMessageRoute() *Route {
 		WithPrefix:  false,
 	}
 }
+
+func (a *API) StatsRoute() *Route {
+	return &Route{
+		HandlerFunc: a.Stats,
+		Method:      http.MethodGet,
+		Name:        "Stats",
+		Pattern:     GetPath(StatsCall),
+		WithPrefix:  false,
+	}
+}

@@ -2,12 +2,23 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 	"github.com/phob0s-pl/perfchat/chat"
 )
+
+// Stats are superduper stats
+type Stats struct {
+	AddedUsers       uint `json:"added_users"`
+	AddedRooms       uint `json:"added_rooms"`
+	DeletedRooms     uint `json:"deleted_rooms"`
+	DeletedUsers     uint `json:"deleted_users"`
+	MessagesReceived uint `json:"messages_received"`
+	BytesTotal       uint `json:"bytes_total"`
+}
 
 type Route struct {
 	Name        string
@@ -18,6 +29,7 @@ type Route struct {
 }
 
 type API struct {
+	stats            Stats
 	Engine           *chat.Chat
 	upgrader         *websocket.Upgrader
 	websocketClients map[string]*websocketClient
@@ -92,17 +104,27 @@ func (a *API) AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Engine.AddUser(
-		&chat.User{
-			AuthID: user.AuthID,
-			Name:   user.Name,
-			Role:   user.Role,
-			Token:  user.Token,
-		}); err != nil {
+	engineUser := &chat.User{
+		AuthID: user.AuthID,
+		Name:   user.Name,
+		Role:   user.Role,
+		Token:  user.Token,
+	}
+
+	if err := a.Engine.AddUser(engineUser); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	if err := a.Engine.AddRoom(&chat.Room{
+		Name:    user.Name,
+		Creator: user.Name,
+		Users:   []*chat.User{engineUser},
+	}); err != nil {
+		_ = a.Engine.JoinRoom(user.Name, user.Name)
+	}
+
 	a.msgBuffer[user.Name] = make(chan *Message, 256)
+	a.stats.AddedUsers++
 }
 
 // Ping respongs wint 200 to ping message
@@ -166,6 +188,7 @@ func (a *API) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 	}
+	a.stats.AddedRooms++
 }
 
 // RoomDelete deletes room from server
@@ -173,9 +196,26 @@ func (a *API) CreateRoom(w http.ResponseWriter, r *http.Request) {
 func (a *API) RoomDelete(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	if _, ok := a.isUser(w, r); !ok {
+	user, ok := a.isUser(w, r)
+	if !ok {
 		return
 	}
+	content, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	room := &Room{}
+	if err := json.Unmarshal(content, room); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := a.Engine.DeleteRoom(user.Name, room.Name); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	a.stats.DeletedRooms++
 }
 
 // RoomJoin joins user to room
@@ -242,13 +282,16 @@ func (a *API) ReceiveMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	content, err := ioutil.ReadAll(r.Body)
+	a.stats.BytesTotal += uint(len(content))
 	if err != nil {
+		fmt.Println("asd")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	msg := &Message{}
 	if err := json.Unmarshal(content, msg); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println("asd2")
 		return
 	}
 	msg.User = user.Name
@@ -268,6 +311,7 @@ func (a *API) ReceiveMessage(w http.ResponseWriter, r *http.Request) {
 			c <- msg
 		}
 	}
+	a.stats.MessagesReceived++
 }
 
 // SendMessage sends messages to client
@@ -338,4 +382,14 @@ func (a *API) Websocket(w http.ResponseWriter, r *http.Request) {
 	a.websocketClients[user.Name] = client
 	a.writeClientMessage(client)
 	a.readClientMessage(client)
+}
+
+func (a *API) Stats(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	payload, err := json.Marshal(a.stats)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Write(payload)
 }

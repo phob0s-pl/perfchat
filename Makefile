@@ -17,7 +17,7 @@ all: test build
 
 build: server client
 
-local: test build
+local: build
 	@cp $(LOCAL_CLIENT_CONF) $(CLIENT_CONF)
 	@cp $(LOCAL_SERVER_CONF) $(SERVER_CONF)
 

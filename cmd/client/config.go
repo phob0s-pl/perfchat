@@ -4,7 +4,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// Config represents server configuration
+// Config represents client configuration
 type Config struct {
 	// Address to listen to
 	Address string
@@ -18,11 +18,14 @@ type Config struct {
 	//AdminPass is administrator Token
 	Token string
 
-	// RoomLimit is maximum number of rooms in chat
-	RoomLimit uint
+	//Workers is count of workers simulating real users
+	Workers uint
 
-	// UsersLimit is maximum number of users in chat
-	UsersLimit uint
+	// RoomOp is time in ms how often room operation is dome
+	RoomOp uint
+
+	// MessageChance is time in ms is chance to join room with random user and send message
+	MessageToUserChance uint
 }
 
 // ReadConfig reads config from file

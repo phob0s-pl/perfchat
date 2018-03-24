@@ -38,6 +38,9 @@ const (
 
 	// WsPath is websocket path
 	WsPath = "ws"
+
+	// StatsCall returns JSON statistics
+	StatsCall = "stats"
 )
 
 // User is structure for manipulating user related calls
