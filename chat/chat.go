@@ -64,7 +64,7 @@ func (c *Chat) AddUser(user *User) error {
 		return ErrNoResources
 	}
 
-	if c.UserExists(user.Name) {
+	if _, ok := c.users[user.Name]; ok {
 		return ErrExists
 	}
 
@@ -81,7 +81,7 @@ func (c *Chat) AddRoom(room *Room) error {
 		return ErrMissingArg
 	}
 
-	if c.RoomExists(room.Name) {
+	if _, ok := c.rooms[room.Name]; ok {
 		return ErrExists
 	}
 
@@ -127,18 +127,24 @@ func (c *Chat) ExitRoom(username, roomname string) error {
 
 // RoomExists checks if room exists
 func (c *Chat) RoomExists(roomname string) bool {
+	c.Lock()
+	defer c.Unlock()
 	_, ok := c.rooms[roomname]
 	return ok
 }
 
 // UserExists checks if user with name exists
 func (c *Chat) UserExists(username string) bool {
+	c.Lock()
+	defer c.Unlock()
 	_, ok := c.users[username]
 	return ok
 }
 
 // GetUserByName returns user by his name
 func (c *Chat) GetUserByName(name string) (*User, error) {
+	c.Lock()
+	defer c.Unlock()
 	user, ok := c.users[name]
 	if !ok {
 		return nil, ErrNotFound
@@ -148,6 +154,8 @@ func (c *Chat) GetUserByName(name string) (*User, error) {
 
 // GetRoomByName returns room by its name
 func (c *Chat) GetRoomByName(name string) (*Room, error) {
+	c.Lock()
+	defer c.Unlock()
 	room, ok := c.rooms[name]
 	if !ok {
 		return nil, ErrNotFound
@@ -157,6 +165,8 @@ func (c *Chat) GetRoomByName(name string) (*Room, error) {
 
 // ListUsers returns all users
 func (c *Chat) ListUsers() (u []*User) {
+	c.Lock()
+	defer c.Unlock()
 	for _, user := range c.users {
 		u = append(u, user)
 	}
@@ -165,6 +175,8 @@ func (c *Chat) ListUsers() (u []*User) {
 
 // ListRooms returns all rooms
 func (c *Chat) ListRooms() (r []*Room) {
+	c.Lock()
+	defer c.Unlock()
 	for _, room := range c.rooms {
 		r = append(r, room)
 	}
