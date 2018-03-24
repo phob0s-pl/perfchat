@@ -66,6 +66,7 @@ func worker(c *Config, user *chat.User) {
 		client   = api.NewClient(user, c.Address)
 		roomT    = time.NewTicker(time.Duration(c.RoomOp) * time.Millisecond)
 		messageT = time.NewTicker(time.Duration(c.MessageToUserChance) * time.Millisecond)
+		myRoom   string
 	)
 
 	for {
@@ -98,6 +99,10 @@ func worker(c *Config, user *chat.User) {
 			msgCount++
 
 		case <-roomT.C:
+			_ = client.RoomDelete(myRoom)
+			myRoom = RandString()
+			_ = client.RoomCreate(myRoom)
+
 		}
 	}
 }
