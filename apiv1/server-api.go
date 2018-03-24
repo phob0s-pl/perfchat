@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/gorilla/websocket"
 	"github.com/phob0s-pl/perfchat/chat"
 )
 
@@ -17,12 +18,23 @@ type Route struct {
 }
 
 type API struct {
-	Engine *chat.Chat
+	Engine           *chat.Chat
+	upgrader         *websocket.Upgrader
+	websocketClients map[string]*websocketClient
+	message          chan *Message
+	msgBuffer        map[string]chan *Message
 }
 
 func NewAPI() *API {
 	return &API{
 		Engine: chat.NewChat(),
+		upgrader: &websocket.Upgrader{
+			ReadBufferSize:  1024 * 1024,
+			WriteBufferSize: 1024 * 1024,
+		},
+		websocketClients: make(map[string]*websocketClient),
+		message:          make(chan *Message),
+		msgBuffer:        make(map[string]chan *Message),
 	}
 }
 
@@ -90,6 +102,7 @@ func (a *API) AddUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	a.msgBuffer[user.Name] = make(chan *Message, 256)
 }
 
 // Ping respongs wint 200 to ping message
@@ -220,6 +233,79 @@ func (a *API) RoomExit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ReceiveMessage receives message from client
+func (a *API) ReceiveMessage(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	user, ok := a.isUser(w, r)
+	if !ok {
+		return
+	}
+	content, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	msg := &Message{}
+	if err := json.Unmarshal(content, msg); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	msg.User = user.Name
+
+	room, err := a.Engine.GetRoomByName(msg.Room)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	for _, roomUser := range room.Users {
+		c, ok := a.msgBuffer[roomUser.Name]
+		if !ok {
+			continue
+		}
+		if len(c) < cap(c) {
+			c <- msg
+		}
+	}
+}
+
+// SendMessage sends messages to client
+func (a *API) SendMessage(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	user, ok := a.isUser(w, r)
+	if !ok {
+		return
+	}
+
+	channel, ok := a.msgBuffer[user.Name]
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	msgs := unchannelMsg(channel)
+
+	payload, err := json.Marshal(msgs)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Write(payload)
+}
+
+func unchannelMsg(channel chan *Message) (msgs []Message) {
+	for {
+		select {
+		case msg := <-channel:
+			msgs = append(msgs, *msg)
+		default:
+			return
+		}
+	}
+}
+
 // Checks if request was done by user
 // if not sets StatusUnauthorized on response and returns false
 func (a *API) isUser(w http.ResponseWriter, r *http.Request) (*chat.User, bool) {
@@ -229,4 +315,27 @@ func (a *API) isUser(w http.ResponseWriter, r *http.Request) (*chat.User, bool) 
 		return nil, false
 	}
 	return user, true
+}
+
+// Websocket handles messages from clients
+func (a *API) Websocket(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	user, ok := a.isUser(w, r)
+	if !ok {
+		return
+	}
+	conn, err := a.upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	client := &websocketClient{
+		conn: conn,
+		msg:  make(chan *Message, 256),
+		name: user.Name,
+	}
+
+	a.websocketClients[user.Name] = client
+	a.writeClientMessage(client)
+	a.readClientMessage(client)
 }

@@ -32,6 +32,12 @@ const (
 
 	// RoomsExitCall [POST] is for exiting from room
 	RoomsExitCall = "rooms/exit"
+
+	// MessageCall [POST] posts single message [GET] retrieves all messages
+	MessageCall = "message"
+
+	// WsPath is websocket path
+	WsPath = "ws"
 )
 
 // User is structure for manipulating user related calls
@@ -49,6 +55,12 @@ type Room struct {
 	Name    string   `json:"name"`
 	Creator string   `json:"creator"`
 	Users   []string `json:"users"`
+}
+
+type Message struct {
+	User    string `json:"user"`
+	Room    string `json:"room"`
+	Content string `json:"content"`
 }
 
 // GetPath returns path to API call

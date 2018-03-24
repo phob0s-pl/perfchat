@@ -34,6 +34,8 @@ func NewServer(address string) *Server {
 	AddAPI(router, serverAPI.CreateRoomRoute())
 	AddAPI(router, serverAPI.JoinRoomRoute())
 	AddAPI(router, serverAPI.ExitRoomRoute())
+	AddAPI(router, serverAPI.SendMessageRoute())
+	AddAPI(router, serverAPI.ReceiveMessageRoute())
 
 	return &Server{
 		Srv: httpSrv,

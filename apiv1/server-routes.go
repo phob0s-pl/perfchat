@@ -71,3 +71,23 @@ func (a *API) ExitRoomRoute() *Route {
 		WithPrefix:  false,
 	}
 }
+
+func (a *API) SendMessageRoute() *Route {
+	return &Route{
+		HandlerFunc: a.SendMessage,
+		Method:      http.MethodGet,
+		Name:        "SendMessage",
+		Pattern:     GetPath(MessageCall),
+		WithPrefix:  false,
+	}
+}
+
+func (a *API) ReceiveMessageRoute() *Route {
+	return &Route{
+		HandlerFunc: a.ReceiveMessage,
+		Method:      http.MethodPost,
+		Name:        "ReceiveMessage",
+		Pattern:     GetPath(MessageCall),
+		WithPrefix:  false,
+	}
+}

@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
-
 	"io/ioutil"
+	"net/http"
 
 	"github.com/phob0s-pl/perfchat/chat"
 )
@@ -215,4 +214,41 @@ func (c *Client) RoomExit(name string) error {
 		return fmt.Errorf("RoomExit: %s", err)
 	}
 	return nil
+}
+
+// SendMessage send message to specified room
+func (c *Client) SendMessage(msg *Message) error {
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("SendMessage: %s", err)
+	}
+
+	request, err := c.newAPIRequest(http.MethodPost, MessageCall, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("SendMessage: %s", err)
+	}
+
+	if _, err := c.do(request); err != nil {
+		return fmt.Errorf("SendMessage: %s", err)
+	}
+	return nil
+}
+
+// ReceiveMessage receives all messages
+func (c *Client) ReceiveMessage() (messages []Message, err error) {
+	request, err := c.newAPIRequest(http.MethodGet, MessageCall, nil)
+	if err != nil {
+		return nil, fmt.Errorf("ReceiveMessage: %s", err)
+	}
+
+	body, err := c.do(request)
+	if err != nil {
+		return messages, fmt.Errorf("ReceiveMessage: %s", err)
+	}
+
+	if err := json.Unmarshal(body, &messages); err != nil {
+		return nil, fmt.Errorf("ReceiveMessage: %s", err)
+	}
+
+	return messages, err
 }
