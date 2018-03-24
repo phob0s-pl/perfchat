@@ -1,6 +1,6 @@
 ---
 
-- hosts: all
+- hosts: perfchat_servers
   tasks:
     - debug:
         msg: task1

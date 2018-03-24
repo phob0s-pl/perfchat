@@ -1,6 +1,6 @@
-resource "google_compute_instance" "aserver" {
+resource "google_compute_instance" "grafana" {
   count        = "1"
-  name         = "aserver"
+  name         = "grafana"
   machine_type = "g1-small"
   zone         = "europe-west1-b"
 

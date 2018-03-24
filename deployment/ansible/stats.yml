@@ -1,0 +1,8 @@
+---
+
+- hosts: grafana
+  tasks:
+    - debug:
+        msg: task1
+    - include_tasks: "{{playbook_dir}}/roles/stats/tasks/stats.yml"
+

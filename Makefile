@@ -45,3 +45,6 @@ ansible: build
 	@cp $(BINARY_SERVER) deployment/ansible/roles/files/
 	@cp $(BINARY_CLIENT) deployment/ansible/roles/files/
 	cd deployment/ansible && ansible-playbook main.yml -i inventories/production/hosts
+
+terraform:
+	cd deployment/terraform && terraform init && terraform plan && terraform apply

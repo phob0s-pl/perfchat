@@ -1,6 +1,6 @@
-resource "google_compute_instance" "aserver" {
+resource "google_compute_instance" "aclient" {
   count        = "1"
-  name         = "aserver"
+  name         = "aclient"
   machine_type = "g1-small"
   zone         = "europe-west1-b"
 

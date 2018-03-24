@@ -1,0 +1,8 @@
+---
+
+- hosts: perfchat_clients
+  tasks:
+    - debug:
+        msg: task1
+    - include_tasks: "{{playbook_dir}}/roles/perfchat_client/tasks/install_client.yml"
+
