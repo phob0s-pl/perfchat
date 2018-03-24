@@ -13,7 +13,7 @@ boot_disk {
  }
 
   metadata {
-    ssh-keys = "root:${file("~/.ssh/gcpx.pub")}"
+    ssh-keys = "jakubj00:${file("~/.ssh/gcpx.pub")}"
     hostname = "aserver"
   }
 

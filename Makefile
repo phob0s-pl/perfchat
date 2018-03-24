@@ -39,3 +39,7 @@ clean:
 	@rm -f $(BINARY_CLIENT)
 	@rm -f $(CLIENT_CONF)
 	@rm -f $(SERVER_CONF)
+
+ansible:
+	@cp ~/.hosts deployment/ansible/inventories/production/hosts
+	cd deployment/ansible && ansible-playbook main.yml -i inventories/production/hosts
