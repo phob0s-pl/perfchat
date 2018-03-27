@@ -5,7 +5,7 @@
 It has ability to spawn any number of workers by using addnodes.sh  script. 
 
 ## Installation
-** Tested only on ubuntu 16.04 **
+**Tested only on ubuntu 16.04**
 
 Install  dependencies
 ```bash
