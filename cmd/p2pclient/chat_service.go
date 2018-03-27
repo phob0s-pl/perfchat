@@ -20,10 +20,10 @@ var (
 )
 
 type Stats struct {
-	msgsend      uint64
-	msgreceived  uint64
-	roomscreated uint64
-	roomsexited  uint64
+	Msgsend      uint64 `json:"msgsend"`
+	Msgreceived  uint64 `json:"msgreceived"`
+	Roomscreated uint64 `json:"roomscreated"`
+	Roomsexited  uint64 `json:"roomsexited"`
 }
 
 // ChatService runs a chat simulation service between nodes
@@ -81,7 +81,7 @@ func (c *ChatService) PeriodicMsgSend() {
 			continue
 		}
 		for i := range c.msgChan {
-			atomic.AddUint64(&c.stats.msgsend, 1)
+			atomic.AddUint64(&c.stats.Msgsend, 1)
 			c.msgChan[i] <- group
 		}
 	}
@@ -93,7 +93,7 @@ func (c *ChatService) PeriodicGroupExit() {
 		if group == "" {
 			continue
 		}
-		atomic.AddUint64(&c.stats.roomsexited, 1)
+		atomic.AddUint64(&c.stats.Roomsexited, 1)
 		for i := range c.roomExitChan {
 			c.roomExitChan[i] <- group
 		}
@@ -119,7 +119,7 @@ func (c *ChatService) PeriodicGroupCreate() {
 		if group == "" {
 			continue
 		}
-		atomic.AddUint64(&c.stats.roomscreated, 1)
+		atomic.AddUint64(&c.stats.Roomscreated, 1)
 
 		for i := range c.roomCreateChan {
 			c.roomCreateChan[i] <- group
@@ -133,10 +133,11 @@ func (c *ChatService) Stop() error {
 }
 
 func (c *ChatService) Info() interface{} {
-	return struct {
-		Received int64 `json:"received"`
-	}{
-		atomic.LoadInt64(&c.received),
+	return Stats{
+		Msgreceived:  atomic.LoadUint64(&c.stats.Msgreceived),
+		Roomscreated: atomic.LoadUint64(&c.stats.Roomscreated),
+		Roomsexited:  atomic.LoadUint64(&c.stats.Roomsexited),
+		Msgsend:      atomic.LoadUint64(&c.stats.Msgsend),
 	}
 }
 
@@ -189,10 +190,10 @@ func (c *ChatService) Run(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 func (c *ChatService) PrintStats() {
 	for range time.Tick(statsPeriod) {
 		c.log.Info("Stats:",
-			"msg_received", atomic.LoadUint64(&c.stats.msgreceived),
-			"groups_created", atomic.LoadUint64(&c.stats.roomscreated),
-			"groups_exited", atomic.LoadUint64(&c.stats.roomsexited),
-			"msg_sent", atomic.LoadUint64(&c.stats.msgsend),
+			"msg_received", atomic.LoadUint64(&c.stats.Msgreceived),
+			"groups_created", atomic.LoadUint64(&c.stats.Roomscreated),
+			"groups_exited", atomic.LoadUint64(&c.stats.Roomsexited),
+			"msg_sent", atomic.LoadUint64(&c.stats.Msgsend),
 		)
 	}
 
@@ -212,7 +213,7 @@ func (c *ChatService) ReceiveMessages(peer *p2p.Peer, rw p2p.MsgReadWriter) {
 		}
 		payload := string(decodePayload(payloadRaw))
 
-		atomic.AddUint64(&c.stats.msgreceived, 1)
+		atomic.AddUint64(&c.stats.Msgreceived, 1)
 		if msg.Code == CreateRoomCode {
 			c.log.Trace("Notified that room was created", "roomname", payload)
 			c.chat.AddKnownGroup(payload, peer.ID().String())
