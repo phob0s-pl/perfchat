@@ -188,7 +188,7 @@ func (c *ChatService) Run(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 
 func (c *ChatService) PrintStats() {
 	for range time.Tick(statsPeriod) {
-		c.log.Error("Stats:",
+		c.log.Info("Stats:",
 			"msg_received", atomic.LoadUint64(&c.stats.msgreceived),
 			"groups_created", atomic.LoadUint64(&c.stats.roomscreated),
 			"groups_exited", atomic.LoadUint64(&c.stats.roomsexited),
