@@ -1,0 +1,36 @@
+---
+
+- name: Copy server
+  copy:
+    src: roles/files/perfchat_server
+    dest: /usr/local/bin/perfchat_server
+    owner: root
+    group: root
+    mode: 0755
+  become: true
+
+# make temaplete
+- name: Copy server config
+  copy:
+    src: roles/files/server.conf
+    dest: /etc/server.conf
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+
+- name: Copy server service file
+  copy:
+    src: roles/files/perfchat_server.service
+    dest: /etc/systemd/system/perfchat_server.service
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+
+- name: restart perfchat_server.service
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: perfchat_server
+  become: true

@@ -1,0 +1,36 @@
+---
+
+- name: Copy client
+  copy:
+    src: roles/files/perfchat_client
+    dest: /usr/local/bin/perfchat_client
+    owner: root
+    group: root
+    mode: 0755
+  become: true
+
+# make temaplete
+- name: Copy client config
+  copy:
+    src: roles/files/client.conf
+    dest: /etc/client.conf
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+
+- name: Copy client service file
+  copy:
+    src: roles/files/perfchat_client.service
+    dest: /etc/systemd/system/perfchat_client.service
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+
+- name: restart perfchat_client.service
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: perfchat_client
+  become: true
