@@ -4,7 +4,7 @@
 
 It has ability to spawn any number of workers by using addnodes.sh  script. 
 
-#Installation
+## Installation
 Install  dependencies
 ```bash
 # if ubuntu/debian
@@ -19,7 +19,7 @@ go get github.com/phob0s-pl/perfchat
 go install github.com/phob0s-pl/perfchat/cmd/p2pclient
 ```
 
-#Running
+## Running
 ```bash
 # In one window
 p2pclient
@@ -29,7 +29,7 @@ $GOPATH/src/github.com/phob0s-pl/perfchat/cmd/p2pclient/addnodes.sh 10
 
 ```
 
-#Verification
+## Verification
 Each 10s all nodes print simple statistics:
 ```bash
 INFO [03-27|21:53:45] Stats: node.id=0f6e7cebda9c65fa msg_received=5964  groups_created=19 groups_exited=3 msg_sent=87277
